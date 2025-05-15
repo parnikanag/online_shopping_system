@@ -402,11 +402,20 @@ else:
     # --- VIEW Tracking Detail ---
     elif choice == "View Tracking Details":
         st.header("📦 Tracking Details")
+        st.write("DEBUG: Entered View Tracking Details section")  
+
+        conn = None
+        cursor = None
         try:
             conn = get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM TRACKING_DETAIL")
+            cursor.execute("""
+                SELECT TD.Track_id, TD.Prod_id, P.Prod_name, TD.Prod_price, TD.Prod_status
+                FROM TRACKING_DETAIL TD
+                LEFT JOIN PRODUCT P ON TD.Prod_id = P.Prod_id
+            """)
             rows = cursor.fetchall()
+            st.write("Rows fetched:", rows)  # Debug output
             if rows:
                 df = pd.DataFrame(rows, columns=["ID", "Product ID", "Product Name", "Price", "Status"])
                 st.dataframe(df, use_container_width=True)
@@ -415,8 +424,10 @@ else:
         except Exception as e:
             st.error(f"❌ Error: {e}")
         finally:
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
 
     # --- UPDATE CUSTOMER ---
@@ -475,7 +486,7 @@ else:
         except Exception as e:
             st.error(f"❌ Error fetching customers: {e}")
 
-# --- DELETE CUSTOMER ---
+    # --- DELETE CUSTOMER ---
     elif choice == "Delete Customer":
         st.header("🗑️ Delete Customer")
         try:
@@ -498,7 +509,6 @@ else:
                         cursor.execute("DELETE FROM CUSTOMER WHERE Customer_id = %s", (selected_id,))
                         conn.commit()
                         st.success("✅ Customer deleted successfully!")
-                        st.experimental_rerun()  # Note: Replace this with st.experimental_rerun() if your Streamlit version supports it, otherwise use st.experimental_set_query_params or other workaround.
                     except Exception as e:
                         st.error(f"❌ Error deleting customer: {e}")
                     finally:
@@ -507,13 +517,13 @@ else:
             else:
                 st.info("ℹ️ No customers available to delete.")
         except Exception as e:
-            st.error(f"❌ Error fetching customers: {e}")
+            st.error(f"❌ Error fetching customer list: {e}")
 
 # --- LOGOUT ---
     elif choice == "Logout":
         st.success("🔒 Logged out successfully!")
         st.session_state.clear()
-        st.experimental_rerun()
+        st.rerun()
 
 # --- FOOTER ---
 st.markdown("""
